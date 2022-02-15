@@ -1,0 +1,59 @@
+#ifndef DATABASE_H
+#define DATABASE_H
+
+#include <QtGlobal>
+#include <QString>
+#include <QSqlDatabase>
+#include <QSqlError>
+#include <QSqlQuery>
+#include <QVariant>
+#include <QDebug>
+#include <QDateTime>
+
+
+extern const QString DB_SERVICE;        //имя сервисной БД
+extern const QString DB_DEFAULT_NAME;   //имя тестовой БД
+extern const QString DB_DRIVER;         //имя драйвера
+extern const QString DB_USER;           //имя пользователя
+extern const QString DB_PASSWORD;       //пароль
+extern const int     DB_PORT;           //порт
+
+extern const QString VALUES_TABLE;       //таблица значений
+extern const QString DESCRIPTIONS_TABLE; //таблица описаний
+extern const QString MESSAGES_TABLE;     //таблица сообщений
+
+extern const QString DESCRIPTIONS_STRUCTURE;
+extern const QString VALUES_STRUCTURE;
+extern const QString MESSAGES_STRUCTURE;
+
+extern const QString ID_COLUMN;           //колонка первичного ключа (одинакова для всех таблиц)
+extern const QString VARID_COLUMN;        //колонка идентификатора переменной в таблице значений
+extern const QString NAME_COLUMN;         //имя переменной
+extern const QString DESCRIPTION_COLUMN;  //описание переменной
+extern const QString UNITS_COLUMN;        //единицы измерения
+extern const QString GROUP_COLUMN;        //группа переменной
+extern const QString DATETIME_COLUMN;     //время изменения
+extern const QString PRECISION_COLUMN;    //точность пердставления
+extern const QString VALUE_COLUMN;        //значение
+extern const QString MESSAGE_COLUMN;      //текст сообщения
+
+extern QSqlDatabase db;
+extern QMap<QString,int> IdxMap;
+
+bool connect_database(const QString &db_name, bool createIfNotAvailable);
+char open_database(const QString db_name);
+bool create_database(const QString db_name);
+bool create_table(const QString table,const QString structure);
+QSqlQuery prepare_update_descriptions();
+QSqlQuery prepare_insert_into_descriptions();
+QSqlQuery prepare_insert_into_values();
+QSqlQuery prepare_insert_into_messages();
+void add_var_description_to_db(QSqlQuery insert, QSqlQuery update, QString name, QString units,
+                         int precision, QString group, QString description);
+void add_message_to_db(QSqlQuery insert_query, QString message, qint64 time);
+void add_value_change_to_db(QSqlQuery insert_query, int id, double value, qint64 time);
+
+void get_idx_map();
+
+
+#endif // DATABASE_H

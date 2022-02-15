@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>translations/qt_ru.qm</file>
+        <file>translations/qtbase_ru.qm</file>
+        <file>translations/qtxmlpatterns_ru.qm</file>
+    </qresource>
+</RCC>

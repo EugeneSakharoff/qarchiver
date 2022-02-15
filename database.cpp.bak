@@ -1,0 +1,194 @@
+#include "database.h"
+
+QSqlDatabase db;
+QMap<QString, int> IdxMap;
+
+const QString DB_SERVICE = "template1";  //имя сервисной БД
+const QString DB_DEFAULT_NAME = "test2"; //имя тестовой БД
+const QString DB_DRIVER = "QPSQL";       //имя драйвера
+const QString DB_USER = "postgres";      //имя пользователя
+const QString DB_PASSWORD = "postgres";  //пароль
+const int DB_PORT = 5432;                //порт
+
+const QString VALUES_TABLE = "vals";               //таблица значений
+const QString DESCRIPTIONS_TABLE = "descriptions"; //таблица описаний
+const QString MESSAGES_TABLE = "messages";         //таблица сообщений
+
+const QString ID_COLUMN = "id";       //колонка первичного ключа (одинакова для всех таблиц)
+const QString VARID_COLUMN = "varid"; //колонка идентификатора переменной в таблице значений
+const QString NAME_COLUMN = "name";   //имя переменной
+const QString DESCRIPTION_COLUMN = "description"; //описание переменной
+const QString UNITS_COLUMN = "units";             //единицы измерения
+const QString GROUP_COLUMN = "ingroup";           //группа переменной
+const QString DATETIME_COLUMN = "time";           //время изменения
+const QString PRECISION_COLUMN = "precision";     //точность пердставления
+const QString VALUE_COLUMN = "val";               //значение
+const QString MESSAGE_COLUMN = "message";         //текст сообщения
+
+//структура таблицы descriptions (описание переменных): id, имя_переменной, ед.изменеия, точность представления, группа
+const QString DESCRIPTIONS_STRUCTURE = "(" + ID_COLUMN + " serial primary key, " + NAME_COLUMN
+                                       + " varchar(20) UNIQUE, " + UNITS_COLUMN + " varchar(20), "
+                                       + PRECISION_COLUMN + " smallint, " + GROUP_COLUMN
+                                       + " varchar(20), " + DESCRIPTION_COLUMN + " varchar(100))";
+
+//структура таблицы vals (изменения значений переменных): id, id_переменной, дата_и_время, значение, предыдущее значение
+const QString VALUES_STRUCTURE = "(" + ID_COLUMN + " serial primary key, " + VARID_COLUMN
+                                 + " int , " + DATETIME_COLUMN + " timestamp, " + VALUE_COLUMN
+                                 + " float)";
+
+//структура таблицы messages (сообщения): id, текст_сообщения, дата_и_время
+const QString MESSAGES_STRUCTURE = "(" + ID_COLUMN + " serial primary key, " + MESSAGE_COLUMN
+                                   + " varchar(256), " + DATETIME_COLUMN + " timestamp)";
+
+//соединение с БД, либо создание, если БД не существует
+bool connect_database(const QString db_name, bool createIfNotAvailable)
+{
+    switch (open_database(db_name)) {
+    case 0: //соединение удалось
+        return true;
+    case 1: //БД с таким именем не существует
+        if (createIfNotAvailable) {
+            create_database(db_name);                //создание БД
+            return connect_database(db_name, false); //попытка соединиться еще раз
+        }
+        break;
+    }
+    return false; //соединение не удалось
+}
+
+//внутренняя функция для установки соединения с БД
+char open_database(const QString db_name)
+{
+    //создание и инициализация QSqlDatabase
+    db = QSqlDatabase::addDatabase(DB_DRIVER, db_name);
+    db.setDatabaseName(db_name);
+    db.setUserName(DB_USER);
+    db.setPassword(DB_PASSWORD);
+    if (!db.open()) { //Если соединение не удалось
+        if (db.lastError().databaseText()
+            == QString("ВАЖНО:  база данных \"" + db_name
+                       + "\" не существует\n")) { //если БД с таким именем не существует
+            qDebug() << "db doesnt exist";
+            return 1;
+        } else { //другая ошибка
+            qDebug() << "ERROR   " << db.lastError().databaseText();
+            return 2;
+        }
+    }
+    return 0;
+}
+
+//создание БД
+bool create_database(const QString db_name)
+{
+    if (open_database(DB_SERVICE) == 0) { //если удалось соединиться с сервисной БД
+        QSqlQuery query(db);
+        if (query.exec("CREATE DATABASE " + db_name
+                       + " WITH OWNER = postgres ENCODING = 'UTF8'TABLESPACE = pg_default "
+                         "CONNECTION LIMIT = -1;")) {
+            //если запрос на создание БД выпонился успешно
+            db.close(); //закрыть сервисную БД
+            return true;
+        }
+        //запрос на создание БД не выполнился
+        db.close();
+    }
+    return false;
+}
+
+//создание таблицы с заданной структурой столбцов
+bool create_table(const QString table, const QString structure)
+{
+    QSqlQuery query(db);
+    if (!query.exec("CREATE TABLE IF NOT EXISTS " + table + " "
+                    + structure)) { //если запрос не был выполнен
+        return false;
+    } else
+        return true;
+}
+
+QSqlQuery prepare_update_descriptions()
+{
+    QSqlQuery q(db);
+    q.prepare("UPDATE " + DESCRIPTIONS_TABLE + " SET " + UNITS_COLUMN + "=:units," + PRECISION_COLUMN
+              + "=:presision," + GROUP_COLUMN + "=:group," + DESCRIPTION_COLUMN + "=:description");
+    return q;
+}
+
+QSqlQuery prepare_insert_into_descriptions()
+{
+    QSqlQuery q(db);
+    q.prepare("INSERT INTO " + DESCRIPTIONS_TABLE + "(" + //ID_COLUMN+","+
+              NAME_COLUMN + "," + UNITS_COLUMN + "," + PRECISION_COLUMN + "," + GROUP_COLUMN + ","
+              + DESCRIPTION_COLUMN + ") VALUES (:name, :units, :precision, :group, :description)");
+    return q;
+}
+
+QSqlQuery prepare_insert_into_values()
+{
+    QSqlQuery q(db);
+    q.prepare("INSERT INTO " + VALUES_TABLE + "(" + VARID_COLUMN + "," + DATETIME_COLUMN + ","
+              + VALUE_COLUMN + ") VALUES (:varid, :dt, :val)");
+    return q;
+}
+
+QSqlQuery prepare_insert_into_messages()
+{
+    QSqlQuery q(db);
+    q.prepare("INSERT INTO " + MESSAGES_TABLE + "(" + MESSAGE_COLUMN + "," + DATETIME_COLUMN
+              + ") VALUES (:msg, :dt)");
+    return q;
+}
+
+void add_var_description_to_db(QSqlQuery insert,
+                               QSqlQuery update,
+                               QString name,
+                               QString units,
+                               int precision,
+                               QString group,
+                               QString description)
+{
+    QSqlQuery check_if_already_exist(db);
+    check_if_already_exist.exec("SELECT * FROM " + DESCRIPTIONS_TABLE + " WHERE " + NAME_COLUMN
+                                + "=" + name);
+    if (check_if_already_exist.next()) {
+        update.bindValue(":units", QVariant(units));
+        update.bindValue(":precision", QVariant(precision));
+        update.bindValue(":group", QVariant(group));
+        update.bindValue(":description", QVariant(description));
+        update.exec();
+    } else {
+        insert.bindValue(":name", QVariant(name));
+        insert.bindValue(":units", QVariant(units));
+        insert.bindValue(":precision", QVariant(precision));
+        insert.bindValue(":group", QVariant(group));
+        insert.bindValue(":description", QVariant(description));
+        insert.exec();
+    }
+}
+
+void add_message_to_db(QSqlQuery insert_query, QString message, qint64 time)
+{
+    qDebug() << "MESSAGE:  " << message;
+    insert_query.bindValue(":msg", QVariant(message));
+    insert_query.bindValue(":dt", QVariant(QDateTime::fromMSecsSinceEpoch(time)));
+    insert_query.exec();
+}
+
+void add_value_change_to_db(QSqlQuery insert_query, int id, double value, qint64 time)
+{
+    qDebug() << "VALUE:  " << id << value;
+    insert_query.bindValue(":varid", QVariant(id));
+    insert_query.bindValue(":dt", QVariant(QDateTime::fromMSecsSinceEpoch(time)));
+    insert_query.bindValue(":val", QVariant(value));
+    insert_query.exec();
+}
+
+void get_idx_map()
+{
+    QSqlQuery select_query(db);
+    select_query.exec("SELECT " + ID_COLUMN + ", " + NAME_COLUMN + " FROM " + DESCRIPTIONS_TABLE);
+    while (select_query.next()) {
+        IdxMap.insert(select_query.value(1).toString(), select_query.value(0).toInt());
+    }
+}
