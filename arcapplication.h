@@ -1,11 +1,13 @@
 #ifndef QXARCAPPLICATION_H
 #define QXARCAPPLICATION_H
 
+
 #include <QObject>
 #include <QCoreApplication>
 #include <QUdpSocket>
 #include <QSet>
 #include <QTimerEvent>
+#include "database.h"
 
 class MLibAccess;
 struct VDATA;

@@ -1,8 +1,7 @@
-#include "main.h"
-#include "database.h"
 
+#include "database.h"
+#include "main.h"
 #include <QFileInfo>
-#include <QSettings>
 
 extern QVector<MVARREC> g_varsList;
 
@@ -57,18 +56,19 @@ strErr.clear();
 QString strDbName = db_name.toLower();
 
 // Получим имя ini-файла
-QString strSettingsPath = QCoreApplication::applicationFilePath();
-QFileInfo fi( strSettingsPath );
-QString ext = fi.suffix();
-strSettingsPath = strSettingsPath.left( strSettingsPath.size() - ext.size() );
-if ( !strSettingsPath.endsWith( QChar( '.' ) ) ) strSettingsPath += QChar( '.' );
-strSettingsPath += QString( "ini" );
+QSettings settings("qarchiver.ini",QSettings::IniFormat);
+//QString strSettingsPath = QCoreApplication::applicationFilePath();
+//QFileInfo fi( strSettingsPath );
+//QString ext = fi.suffix();
+//strSettingsPath = strSettingsPath.left( strSettingsPath.size() - ext.size() );
+//if ( !strSettingsPath.endsWith( QChar( '.' ) ) ) strSettingsPath += QChar( '.' );
+//strSettingsPath += QString( "ini" );
 
 // Из ini-файла считаем имя и пароль для подключения к системной базе данных (шаблону БД)
 const char* szKeyUserName = "USERNAME";
 const char* szKeyPassword = "PASSWORD";
-QSettings settings( strSettingsPath, QSettings::IniFormat );
-settings.setIniCodec( "UTF-8" );
+
+
 
 bool bNeedSync = false;
 

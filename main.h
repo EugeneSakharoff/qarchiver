@@ -7,6 +7,7 @@
 #include <QVariant>
 #include <QSettings>
 
+
 #include <limits>
 
 #ifdef Q_OS_WIN
@@ -19,7 +20,7 @@
 
 void printConsole( const QString & str );
 
-QSettings settings("qarch_settings.ini",QSettings::IniFormat);
+
 
 #define nVarNameLg  32 // Max length of a variable name
 #define nMaxVarSz  200 // Max length of a string and an array-type variable
@@ -295,5 +296,7 @@ public:
 };
 
 bool hasOneOf( const QString & str, const char* s, QChar & illChar );
+
+
 
 #endif // MAIN_H

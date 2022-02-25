@@ -1,6 +1,6 @@
 #include "main.h"
+
 #include "arcapplication.h"
-#include "database.h"
 
 #include <QLocale>
 #include <QTranslator>
@@ -50,6 +50,7 @@ const char* DB_PASSWORD = "postgres";  // Пароль
 //--------------------------------------------------------
 int main( int argc, char* argv[] )
 {
+
 setlocale( LC_ALL, "Russian" );
 setlocale( LC_NUMERIC, "English" );
 

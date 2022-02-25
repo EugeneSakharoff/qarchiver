@@ -1,7 +1,6 @@
-#include "main.h"
-#include "database.h"
 #include "arcapplication.h"
-
+#include "database.h"
+#include "main.h"
 #include <QNetworkInterface>
 
 extern QVector<MVARREC> g_varsList;
@@ -238,7 +237,7 @@ return;
 void QxArcApplication::timerEvent( QTimerEvent* event )
 {
 Q_UNUSED( event )
-
+QSettings settings("qarchiver.ini",QSettings::IniFormat);
 for ( int idx : m_changedVars )
   {
   MVARREC & mvarrec = g_varsList[ idx ];

@@ -10,6 +10,8 @@
 #include <QVariant>
 #include <QtGlobal>
 
+
+
 bool connect_database( const QString & db_name, const QString & strUserName,
                        const QString & strPassword, bool bCreate, QString & strErr );
 bool create_table( const QString & table, const QString & structure, QString & strErr );
@@ -19,5 +21,6 @@ void closeDb();
 bool populateDescriptionTable( QString & strErr );
 bool populateGroupsTable( QString & strErr );
 bool prepareRunQueries( QString & strErr );
+
 
 #endif //  DATABASE_H
